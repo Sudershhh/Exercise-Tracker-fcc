@@ -1,11 +1,34 @@
-const express = require('express')
-const app = express()
-const cors = require('cors')
 require('dotenv').config()
+const express = require('express')
+const cors = require('cors')
+const User = require('./Schemas/UserSchema')
+
+
+
+const bodyParser = require('body-parser');
+const app = express()
+const mongoose = require('mongoose');
+const req = require('express/lib/request');
+
+
 
 app.use(cors())
 app.use(express.static('public'))
 
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.json())
+
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', () => {
+  console.log('Connected to MongoDB');
+});
 
 class UserBase
 {
@@ -37,12 +60,20 @@ app.get('/', (req, res) => {
 });
 
 //CREATE A NEW USER
-app.post('/api/users/', function(req,res)
+app.post('/api/users/', async function(req,res)
 {
 
-
-
-// username and _id return
+  const {username} = req.body
+  try
+  {
+    const newUser = new User({username})
+    const savedUser = await newUser.save() 
+    const {_id} = savedUser
+    console.log({"_id":_id.toString(), "username":username})
+    res.json({"_id":_id.toString(), "username":username})
+  }catch(error)
+  {
+    res.status(500).json({ message: 'Error adding user', error });  }
 
 })
 
