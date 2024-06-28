@@ -30,28 +30,7 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
-class UserBase
-{
 
-  constructor()
-  {
-    this.users=[]
-
-  }
-
-  createUser(user)
-  {
-
-    this.users.push(user)
-  }
-
-  getAllUsers()
-  {
-    return this.users;
-  }
-
-
-}
 
 
 
@@ -79,8 +58,20 @@ app.post('/api/users/', async function(req,res)
 
 
 //GET ALL USERS
-app.get("/api/users", function(req,res)
-{
+app.get("/api/users", async function(req,res)
+{ 
+
+  try
+  { 
+
+    const allUsers = await User.find({},{_id:1,username:1})
+    console.log(allUsers)
+    
+    res.status(200).json(allUsers)
+  }catch(error)
+  {
+    res.status(500).json(error)
+  }
 
   //array - username and _id
 
