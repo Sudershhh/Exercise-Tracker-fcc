@@ -8,7 +8,6 @@ const Exercises = require("./Schemas/ExerciseSchema")
 const bodyParser = require('body-parser');
 const app = express()
 const mongoose = require('mongoose');
-const req = require('express/lib/request');
 
 
 
@@ -48,7 +47,6 @@ app.post('/api/users/', async function(req,res)
     const newUser = new User({username})
     const savedUser = await newUser.save() 
     const {_id} = savedUser
-    console.log({"_id":_id.toString(), "username":username})
     res.json({"_id":_id.toString(), "username":username})
   }catch(error)
   {
@@ -65,7 +63,6 @@ app.get("/api/users", async function(req,res)
   { 
 
     const allUsers = await User.find({},{_id:1,username:1})
-    console.log(allUsers)
     
     res.status(200).json(allUsers)
   }catch(error)
@@ -90,7 +87,6 @@ app.post("/api/users/:_id/exercises", async function(req,res)
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    console.log("USER : ", user);
     
     const { description, duration, date } = req.body;
     let currentDate;
@@ -103,14 +99,12 @@ app.post("/api/users/:_id/exercises", async function(req,res)
     const exerciseObject = {
       description,
       duration: parseInt(duration),
-      currentDate
+      date:currentDate
     };
-    console.log("EXERCISE OBJECT : ", exerciseObject);
 
     let userExercises = await Exercises.findOne({ userId: _id.toString() });
 
     if (!userExercises) {
-      console.log("NO USER EXERCISE - CREATING ONE");
       let log = [];
       log.push(exerciseObject);
       const newExercise = new Exercises({
@@ -119,27 +113,24 @@ app.post("/api/users/:_id/exercises", async function(req,res)
         log: log
       });
       const savedExercise = await newExercise.save();
-      console.log("NEWLY CREATED USER EXERCISE - ", savedExercise);
       return res.status(200).json({
         username: user.username,
         description: exerciseObject.description,
         duration: exerciseObject.duration,
-        date: exerciseObject.currentDate,
+        date: exerciseObject.date,
         _id: user._id
       });
     } else {
-      console.log("USER EXERCISE ALREADY EXISTS");
       const updatedExercises = await Exercises.findOneAndUpdate(
         { userId: _id },
         { $push: { log: exerciseObject }, $inc: { count: 1 } },
         { new: true, useFindAndModify: false }
       );
-      console.log("CHECKING & UPDATING EXERCISE ", updatedExercises);
       return res.status(200).json({
         username: user.username,
         description: exerciseObject.description,
         duration: exerciseObject.duration,
-        date: exerciseObject.currentDate,
+        date: exerciseObject.date,
         _id: user._id
       });
     }
@@ -153,9 +144,73 @@ app.post("/api/users/:_id/exercises", async function(req,res)
 })
 
 //Get User's exercise logs
-app.get("/api/users/:_id/logs", function(req,res)
+app.get("/api/users/:_id/logs", async function(req,res)
 {
-  return;
+
+    const userId = req.params._id
+    const {from,to,limit }= req.query
+  try
+  {
+     const user = await User.findById({_id: userId},{username:1,_id:1})
+     console.log("USER : ", user)
+     if(!user)
+      {
+        res.status(404).json({'error' : 'User not found'})
+        return;
+      }
+
+      const exercise = await Exercises.findOne(
+        { userId: userId },
+        { count: 1, 'log.date': 1, 'log.description': 1, 'log.duration': 1, _id: 1 }
+      );      
+      
+      console.log("Exercise : ", exercise)
+      if(!exercise)
+        {
+          res.status(404).json({'error':'Exercise not found'})
+          return;
+        }
+        
+        // let filteredExercises;
+        // let count;
+        //Query parameters
+        // if(from || to || limit)
+        //   {
+        //     filteredExercises = exercises.filter(item => {
+        //       const itemDate = new Date(item.date);
+        //       return (
+        //         (!from || itemDate >= new Date(from)) &&
+        //         (!to || itemDate <= new Date(to))
+        //       );
+        //     });
+            
+        //     count = limit
+        //   }
+          
+        //   else{
+        //     filteredExercises = [...exercise]
+        //     count = filteredExercises.count
+        //   }
+
+
+
+        return res.status(200).json({
+          "username":user.username,
+          "count":exercise.count,
+          "_id":userId,
+          "log":exercise.log
+          
+        })
+
+      
+
+
+  }
+  catch(error)
+  {
+    res.status(500).json(error)
+  }
+
   //log array of all exercises
   //returns users obejct iewht count - no of exercvies for that suer
 })

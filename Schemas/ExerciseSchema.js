@@ -13,7 +13,7 @@ const exerciseSchema = mongoose.Schema({
             type: Number,
             required: true
           },
-          currentDate: {
+          date: {
             type: String,
             required: true
           }
