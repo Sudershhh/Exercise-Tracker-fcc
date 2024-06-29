@@ -192,17 +192,39 @@ app.get("/api/users/:_id/logs", async function(req,res)
         //     count = filteredExercises.count
         //   }
 
+        let filteredLog = exercise.log;
+
+        // Apply filters if from and/or to are provided
+        if (from || to) {
+            let fromDate = from ? new Date(from) : new Date(0); // Default to Unix epoch start
+            let toDate = to ? new Date(to) : new Date(); // Default to current date
+
+            filteredLog = filteredLog.filter(item => {
+                let logDate = new Date(item.date);
+                return logDate >= fromDate && logDate <= toDate;
+            });
+        }
+
+        // Apply limit if provided
+        if (limit) {
+            filteredLog = filteredLog.slice(0, parseInt(limit));
+        }
 
 
-        return res.status(200).json({
-          "username":user.username,
-          "count":exercise.count,
-          "_id":userId,
-          "log":exercise.log
+        // return res.status(200).json({
+        //   "username":user.username,
+        //   "count":exercise.count,
+        //   "_id":userId,
+        //   "log":exercise.log
           
-        })
+        // })
 
-      
+        return res.json({
+          username: user.username,
+          count: exercise.log.length,
+          _id: userId,
+          log: filteredLog
+      });      
 
 
   }
